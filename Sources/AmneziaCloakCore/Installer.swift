@@ -29,7 +29,13 @@ public func installPreflight() -> InstallPreflight {
     let fm = FileManager.default
     if !fm.fileExists(atPath: Paths.helper) { return .helperMissing }
     if !fm.isExecutableFile(atPath: Paths.helper) { return .helperNotExecutable }
+    // All three are needed: `awg` for status, `awg-quick` to bring the tunnel
+    // up/down, and `amneziawg-go` as the userspace daemon `awg-quick` spawns
+    // on macOS. Missing any one means `up` will fail silently without this
+    // check.
     if !fm.fileExists(atPath: Paths.awg) { return .awgToolsMissing }
+    if !fm.fileExists(atPath: Paths.awgQuick) { return .awgToolsMissing }
+    if !fm.fileExists(atPath: Paths.amneziawgGo) { return .awgToolsMissing }
     return .ok
 }
 

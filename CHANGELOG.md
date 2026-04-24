@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.9] — 2026-04-25
+
+### Fixed
+- Clicking a tunnel to toggle it up/down could fail silently — the helper's exit code and stderr were discarded, so missing prerequisites (`awg-quick`, `amneziawg-go`) looked like the app was just ignoring the click. Both `toggleTunnel` and `deleteTunnel` now surface the helper's stderr in an NSAlert.
+- Preflight now checks `awg-quick` and `amneziawg-go` in addition to `awg`. Previously we only detected `/usr/local/bin/awg` missing, so a Mac with the CLI but no daemon would pass preflight and then fail at `up` time with no signal.
+
+### Added
+- Gate tunnel toggle and delete on the same preflight as first-run setup — if the helper is missing the app re-offers self-install; if `amneziawg-tools` / `amneziawg-go` are missing it surfaces the upstream install links instead of silently failing.
+
 ## [0.8] — 2026-04-25
 
 ### Fixed

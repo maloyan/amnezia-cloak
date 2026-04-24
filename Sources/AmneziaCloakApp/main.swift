@@ -56,19 +56,7 @@ final class App: NSObject, NSApplicationDelegate {
             }
             done.runModal()
         case .awgToolsMissing:
-            let a = NSAlert()
-            a.messageText = "amneziawg-tools is not installed"
-            a.informativeText = """
-                The app needs `awg` and `awg-quick` at /usr/local/bin/ to \
-                bring tunnels up and down. These are third-party binaries \
-                not shipped by Amnezia Cloak.
-
-                Install them from:
-                https://github.com/amnezia-vpn/amneziawg-tools
-                """
-            a.addButton(withTitle: "OK")
-            NSApp.activate(ignoringOtherApps: true)
-            a.runModal()
+            showAwgToolsMissingAlert()
         }
     }
 
@@ -237,16 +225,65 @@ final class App: NSObject, NSApplicationDelegate {
 
     @objc private func toggleTunnel(_ sender: NSMenuItem) {
         guard let t = sender.representedObject as? Tunnel else { return }
-        let names = Array(activeTunnelNames())
-        DispatchQueue.global().async { [weak self] in
-            if names.contains(t.name) {
-                _ = sudoHelper(["down", t.name])
-            } else {
-                for other in names { _ = sudoHelper(["down", other]) }
-                _ = sudoHelper(["up", t.name])
-            }
-            DispatchQueue.main.async { self?.refresh() }
+        // Before firing sudoHelper, gate on preflight so missing prerequisites
+        // produce a specific alert instead of a silent no-op. Helper-missing
+        // is handled by offerSetupIfNeeded which will re-prompt.
+        switch installPreflight() {
+        case .ok:
+            break
+        case .helperMissing, .helperNotExecutable:
+            offerSetupIfNeeded()
+            return
+        case .awgToolsMissing:
+            showAwgToolsMissingAlert()
+            return
         }
+
+        let names = Array(activeTunnelNames())
+        let goingUp = !names.contains(t.name)
+        DispatchQueue.global().async { [weak self] in
+            var failure: (verb: String, stderr: String)?
+            if goingUp {
+                for other in names {
+                    let r = sudoHelper(["down", other])
+                    if r.code != 0 && failure == nil {
+                        failure = ("down \(other)", r.out.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
+                }
+                let r = sudoHelper(["up", t.name])
+                if r.code != 0 && failure == nil {
+                    failure = ("up \(t.name)", r.out.trimmingCharacters(in: .whitespacesAndNewlines))
+                }
+            } else {
+                let r = sudoHelper(["down", t.name])
+                if r.code != 0 && failure == nil {
+                    failure = ("down \(t.name)", r.out.trimmingCharacters(in: .whitespacesAndNewlines))
+                }
+            }
+            DispatchQueue.main.async {
+                if let f = failure {
+                    let detail = f.stderr.isEmpty ? "(no output)" : f.stderr
+                    self?.alert("awg-helper \(f.verb) failed:\n\n\(detail)")
+                }
+                self?.refresh()
+            }
+        }
+    }
+
+    private func showAwgToolsMissingAlert() {
+        let a = NSAlert()
+        a.messageText = "amneziawg-tools is not installed"
+        a.informativeText = """
+            The app needs `awg`, `awg-quick`, and `amneziawg-go` under \
+            /usr/local/bin/ to bring tunnels up and down.
+
+            Install them from:
+            https://github.com/amnezia-vpn/amneziawg-tools
+            https://github.com/amnezia-vpn/amneziawg-go
+            """
+        a.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        a.runModal()
     }
 
     @objc private func importFile() {
@@ -370,7 +407,10 @@ final class App: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         guard confirm.runModal() == .alertFirstButtonReturn else { return }
         if activeTunnelNames().contains(t.name) { _ = sudoHelper(["down", t.name]) }
-        _ = sudoHelper(["delete", t.name])
+        let r = sudoHelper(["delete", t.name])
+        if r.code != 0 {
+            alert("awg-helper delete failed:\n\n\(r.out.trimmingCharacters(in: .whitespacesAndNewlines))")
+        }
         refresh()
     }
 
