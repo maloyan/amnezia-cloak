@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.13] — 2026-04-25
+
+### Fixed
+- `awg-quick` internally called `wg show` / `wg setconf` / `wg showconf`, which aren't installed anywhere — the binary is named `awg`, not `wg`. Users hit `line 112: wg: command not found` on tunnel up. amneziawg-tools' Makefile copies `wg-quick/darwin.bash` verbatim; the rename from `wg` to `awg` inside the script itself is done by Amnezia's own installer but not the `make install` target. Release workflow now `sed -E 's/\bwg /awg /g'` the bundled `awg-quick` after building, matching Amnezia's canonical installer output (leaves `wg-quick`, `wg(8)` comments, `WG_CONFIG` untouched).
+
 ## [0.12] — 2026-04-25
 
 ### Fixed
