@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.14] — 2026-04-25
+
+### Fixed
+- `amneziawg-go utun` started, but `awg-quick` bailed immediately with `rm -f /var/run/wireguard/…name` — two more missing patches that Amnezia's upstream macOS installer applies on top of the `make install` output:
+  - **Race against the daemon-write.** `get_real_interface` checks `/var/run/amneziawg/<tun>.name`, but `amneziawg-go` hasn't finished writing it yet. Insert `sleep 0.3; chmod 444 "$WG_TUN_NAME_FILE"` right after the daemon launch, matching Amnezia's canonical build.
+  - **Runtime-dir rename.** Upstream `darwin.bash` cleans up `/var/run/wireguard/` (WireGuard's path), not `/var/run/amneziawg/` (AmneziaWG's). Rewrite both `stat` and `rm` paths.
+- CI workflow now asserts all four patch counts (`wg → awg` calls, `/var/run/amneziawg/` references, `/var/run/wireguard/` remnants, `sleep 0.3` insertions) and fails loudly on mismatch so a silent patch skip can't ship again.
+
 ## [0.13] — 2026-04-25
 
 ### Fixed
