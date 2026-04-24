@@ -52,11 +52,16 @@ jobs:
           chmod +x "$GITHUB_WORKSPACE/scripts/bin/awg" "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
           # amneziawg-tools' Makefile copies darwin.bash verbatim, but the
           # script internally calls `wg show/setconf/showconf` — which we
-          # renamed to `awg`. Rewrite every bare `wg ` call to `awg `. The
-          # `\b` + trailing space guards match Amnezia's canonical installer
-          # output: skips `wg-quick`, `wg(8)` in comments, `WG_CONFIG` var.
-          sed -i '' -E 's/\bwg /awg /g' "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
-          grep -cE '\bawg (show|setconf|showconf)' "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
+          # renamed to `awg`. Rewrite every bare `wg ` call to `awg `. Use
+          # perl because BSD sed on macos-14 doesn't support \b word boundary
+          # in its extended-regex mode (v0.13's sed call matched zero lines
+          # and silently shipped an unpatched script). Word boundary +
+          # trailing space leaves `wg-quick`, `wg(8)` comments, and
+          # `WG_CONFIG` untouched.
+          perl -i -pe 's/\bwg /awg /g' "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
+          matches=$(grep -cE '(^| |	|\()awg (show|setconf|showconf)' "$GITHUB_WORKSPACE/scripts/bin/awg-quick")
+          echo "wg → awg exec calls rewritten: $matches"
+          [ "$matches" -ge 7 ] || { echo "expected ≥7 matches, got $matches"; exit 1; }
           file "$GITHUB_WORKSPACE/scripts/bin/"awg*
 
       - name: Build amneziawg-go
