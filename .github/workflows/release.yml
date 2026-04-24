@@ -27,8 +27,14 @@ jobs:
           git clone --depth 1 https://github.com/amnezia-vpn/amneziawg-tools.git /tmp/awg-tools
           cd /tmp/awg-tools/src
           make PLATFORM=darwin
+          # Makefile produces `src/wg` (inherited from upstream wireguard-tools)
+          # and `src/wg-quick/darwin.bash`. `make install` renames them to
+          # `awg` / `awg-quick` — we replicate those two renames manually so
+          # we don't need DESTDIR gymnastics.
           mkdir -p "$GITHUB_WORKSPACE/scripts/bin"
-          cp awg awg-quick "$GITHUB_WORKSPACE/scripts/bin/"
+          cp wg              "$GITHUB_WORKSPACE/scripts/bin/awg"
+          cp wg-quick/darwin.bash "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
+          chmod +x "$GITHUB_WORKSPACE/scripts/bin/awg" "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
           file "$GITHUB_WORKSPACE/scripts/bin/"awg*
 
       - name: Build amneziawg-go
