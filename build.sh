@@ -16,12 +16,12 @@ cd "$ROOT"
 swift build -c release --product AmneziaCloak
 
 # 2. Assemble the .app bundle.
-cp "$ROOT/.build/release/AmneziaCloak" "$APP/Contents/MacOS/AmneziaCloak"
-cp "$ROOT/Info.plist"                  "$APP/Contents/Info.plist"
-cp "$ROOT/AppIcon.icns"                "$APP/Contents/Resources/AppIcon.icns"
-cp "$ROOT/MenubarIcon.png"             "$APP/Contents/Resources/MenubarIcon.png"
-cp "$ROOT/MenubarIcon@2x.png"          "$APP/Contents/Resources/MenubarIcon@2x.png"
-cp "$ROOT/MenubarIcon@3x.png"          "$APP/Contents/Resources/MenubarIcon@3x.png"
+cp "$ROOT/.build/release/AmneziaCloak"      "$APP/Contents/MacOS/AmneziaCloak"
+cp "$ROOT/Info.plist"                       "$APP/Contents/Info.plist"
+cp "$ROOT/assets/app-icon.icns"             "$APP/Contents/Resources/AppIcon.icns"
+cp "$ROOT/assets/menubar-icon.png"          "$APP/Contents/Resources/menubar-icon.png"
+cp "$ROOT/assets/menubar-icon@2x.png"       "$APP/Contents/Resources/menubar-icon@2x.png"
+cp "$ROOT/assets/menubar-icon@3x.png"       "$APP/Contents/Resources/menubar-icon@3x.png"
 
 # 3. Ad-hoc sign so Gatekeeper allows unsigned local launch after DMG copy.
 #    No nested content, so --deep is unnecessary (and deprecated since macOS 11).

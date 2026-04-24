@@ -35,7 +35,7 @@ final class App: NSObject, NSApplicationDelegate {
         // Falls back to an SF Symbol when the resource is missing (loose-binary runs).
         if let btn = status.button {
             let image: NSImage? = {
-                if let i = NSImage(named: "MenubarIcon") {
+                if let i = NSImage(named: "menubar-icon") {
                     i.size = NSSize(width: 18, height: 18)
                     i.isTemplate = true
                     return i

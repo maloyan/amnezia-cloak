@@ -42,8 +42,10 @@ Tests/
     TunnelNameTests.swift
     VPNURLTests.swift            # fixture-based vpn:// decode tests
 Info.plist                       # bundled into .app by build.sh
-AppIcon.icns                     # dock/Finder icon
-MenubarIcon.png                  # menubar icon (+ @2x / @3x)
+assets/
+  app-icon.icns                  # dock/Finder icon (bundled as AppIcon.icns)
+  app-icon.png                   # 512×512 README hero
+  menubar-icon.png               # menubar icon (+ @2x / @3x)
 build.sh                         # SPM build → .app bundle → DMG
 .github/workflows/               # ci.yml (test + lint + bundle), release.yml (tag → release)
 .swiftlint.yml                   # SwiftLint config (strict mode in CI)
@@ -117,7 +119,7 @@ Do not merge a PR with a red CI.
 | Helper verbs called from Swift | `README.md` sudoers section + `AGENTS.md` runtime-deps table |
 | `Paths.awg` / helper path | the README install instructions |
 | `Info.plist` keys | `build.sh` if you add a new resource that needs bundling |
-| `main.swift` menubar icon handling | `MenubarIcon.png` / `@2x` / `@3x` if the pt size changes |
+| `main.swift` menubar icon handling | `assets/menubar-icon.png` / `@2x` / `@3x` if the pt size changes |
 | vpn:// JSON schema assumptions | `Tests/AmneziaCloakCoreTests/VPNURLTests.swift` fixtures + add a regression test |
 
 ---

@@ -6,11 +6,11 @@
 [![Swift 5.9+](https://img.shields.io/badge/Swift-5.9%2B-orange.svg)](https://swift.org)
 [![macOS 11+](https://img.shields.io/badge/macOS-11.0%2B-blue.svg)](https://www.apple.com/macos/)
 
-A minimal macOS menubar client for [AmneziaWG](https://github.com/amnezia-vpn/amneziawg-go) tunnels — list, toggle, import `.conf` files, paste `vpn://` share links, edit configs in place. Single target, ~350 lines of Swift, zero third-party dependencies.
-
 <p align="center">
-  <img src="MenubarIcon@3x.png" alt="Amnezia Cloak menubar icon" width="54" height="54">
+  <img src="assets/app-icon.png" alt="Amnezia Cloak" width="256" height="256">
 </p>
+
+A minimal macOS menubar client for [AmneziaWG](https://github.com/amnezia-vpn/amneziawg-go) tunnels — list, toggle, import `.conf` files, paste `vpn://` share links, edit configs in place. Single target, ~350 lines of Swift, zero third-party dependencies.
 
 ## Features
 
