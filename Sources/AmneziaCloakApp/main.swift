@@ -109,6 +109,7 @@ final class App: NSObject, NSApplicationDelegate {
         addAction(menu, "Paste vpn:// URL…", "v", #selector(pasteVpnURL))
         addAction(menu, "Show full status", "s", #selector(showStatus))
         menu.addItem(.separator())
+        addAction(menu, "About Amnezia Cloak", "", #selector(showAbout))
         addAction(menu, "Quit", "q", #selector(quitApp))
         status.menu = menu
     }
@@ -283,6 +284,26 @@ final class App: NSObject, NSApplicationDelegate {
         a.informativeText = out.isEmpty ? "No active tunnels." : out
         NSApp.activate(ignoringOtherApps: true)
         a.runModal()
+    }
+
+    @objc private func showAbout() {
+        NSApp.activate(ignoringOtherApps: true)
+        // Build a credits block with a clickable repo link. NSApplication's
+        // standard panel auto-populates app name + version from Info.plist
+        // (CFBundleName / CFBundleShortVersionString / CFBundleVersion) and
+        // the icon from CFBundleIconFile — we just supply the extras.
+        let blurb = "Minimal macOS menubar client for AmneziaWG tunnels.\n\n"
+        let credits = NSMutableAttributedString(
+            string: blurb,
+            attributes: [.foregroundColor: NSColor.labelColor]
+        )
+        let linkText = "github.com/maloyan/amnezia-cloak"
+        let link = NSMutableAttributedString(string: linkText)
+        if let url = URL(string: "https://github.com/maloyan/amnezia-cloak") {
+            link.addAttribute(.link, value: url, range: NSRange(location: 0, length: link.length))
+        }
+        credits.append(link)
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
     }
 
     @objc private func quitApp() { NSApplication.shared.terminate(nil) }

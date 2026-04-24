@@ -12,5 +12,6 @@
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>LSUIElement</key><true/>
   <key>LSMinimumSystemVersion</key><string>11.0</string>
+  <key>NSHumanReadableCopyright</key><string>© 2026 Narek Maloyan · MIT License</string>
 </dict>
 </plist>
