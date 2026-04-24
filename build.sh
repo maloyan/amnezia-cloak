@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build Amnezia Cloak.app + Amnezia-Cloak.dmg from sources in this directory.
+# Build Amnezia Cloak.app + Amnezia-Cloak.dmg from SPM sources.
+# Outputs: build/Amnezia Cloak.app and Amnezia-Cloak.dmg at repo root.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -10,24 +11,32 @@ DMG="$ROOT/Amnezia-Cloak.dmg"
 rm -rf "$BUILD" "$DMG"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-cp "$ROOT/Info.plist"            "$APP/Contents/Info.plist"
-cp "$ROOT/AppIcon.icns"          "$APP/Contents/Resources/AppIcon.icns"
-cp "$ROOT/MenubarIcon.png"       "$APP/Contents/Resources/MenubarIcon.png"
-cp "$ROOT/MenubarIcon@2x.png"    "$APP/Contents/Resources/MenubarIcon@2x.png"
-cp "$ROOT/MenubarIcon@3x.png"    "$APP/Contents/Resources/MenubarIcon@3x.png"
+# 1. Compile the executable with SPM.
+cd "$ROOT"
+swift build -c release --product AmneziaCloak
 
-swiftc "$ROOT/main.swift" -O -o "$APP/Contents/MacOS/AmneziaCloak"
+# 2. Assemble the .app bundle.
+cp "$ROOT/.build/release/AmneziaCloak" "$APP/Contents/MacOS/AmneziaCloak"
+cp "$ROOT/Info.plist"                  "$APP/Contents/Info.plist"
+cp "$ROOT/AppIcon.icns"                "$APP/Contents/Resources/AppIcon.icns"
+cp "$ROOT/MenubarIcon.png"             "$APP/Contents/Resources/MenubarIcon.png"
+cp "$ROOT/MenubarIcon@2x.png"          "$APP/Contents/Resources/MenubarIcon@2x.png"
+cp "$ROOT/MenubarIcon@3x.png"          "$APP/Contents/Resources/MenubarIcon@3x.png"
 
-# ad-hoc sign so Gatekeeper allows unsigned local launch after dragging from DMG.
-# No nested content → --deep is unnecessary (and deprecated since macOS 11).
+# 3. Ad-hoc sign so Gatekeeper allows unsigned local launch after DMG copy.
+#    No nested content, so --deep is unnecessary (and deprecated since macOS 11).
 codesign --force --sign - "$APP"
 
-# DMG with drag-to-Applications UX
+# 4. DMG with drag-to-Applications UX.
 STAGE="$BUILD/dmg-stage"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-hdiutil create -volname "Amnezia Cloak" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+hdiutil create \
+    -volname "Amnezia Cloak" \
+    -srcfolder "$STAGE" \
+    -ov -format UDZO \
+    "$DMG" >/dev/null
 
 echo "built: $APP"
 echo "dmg  : $DMG"

@@ -1,4 +1,7 @@
+.build/
+.swiftpm/
 build/
 *.dmg
 *.app
 .DS_Store
+Package.resolved
