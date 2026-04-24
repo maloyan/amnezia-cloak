@@ -9,7 +9,7 @@ Single-file Swift app (~310 lines), no Xcode project — just `swiftc` + an `Inf
 - macOS 11+
 - [`amneziawg-go`](https://github.com/amnezia-vpn/amneziawg-go) userspace daemon
 - [`amneziawg-tools`](https://github.com/amnezia-vpn/amneziawg-tools) (`awg`, `awg-quick`) in `/usr/local/bin`
-- `awg-helper` root setuid/sudoers wrapper in `/usr/local/sbin` exposing subcommands: `install <name> <tmpfile>`, `up <name>`, `down <name>`, `delete <name>`, `cat <name>`. Sudoers rule with `NOPASSWD` so the app can call it via `sudo -n`.
+- `awg-helper` root sudoers wrapper in `/usr/local/sbin` exposing subcommands `install <name> <tmpfile>`, `up <name>`, `down <name>`, `delete <name>`. Sudoers rule with `NOPASSWD` so the app can call it via `sudo -n`. The app also calls `sudo -n /bin/cat <conf-path>` directly for reading (root-owned 600 confs), so `/bin/cat` must also be allowed NOPASSWD for the invoking user.
 
 ## Build
 

@@ -18,8 +18,9 @@ cp "$ROOT/MenubarIcon@3x.png"    "$APP/Contents/Resources/MenubarIcon@3x.png"
 
 swiftc "$ROOT/main.swift" -O -o "$APP/Contents/MacOS/AmneziaCloak"
 
-# ad-hoc sign so Gatekeeper allows unsigned local launch after dragging from DMG
-codesign --force --deep --sign - "$APP"
+# ad-hoc sign so Gatekeeper allows unsigned local launch after dragging from DMG.
+# No nested content → --deep is unnecessary (and deprecated since macOS 11).
+codesign --force --sign - "$APP"
 
 # DMG with drag-to-Applications UX
 STAGE="$BUILD/dmg-stage"
