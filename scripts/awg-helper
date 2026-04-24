@@ -1,0 +1,81 @@
+#!/bin/bash
+# Privileged helper for Amnezia Cloak. Installed to /usr/local/sbin/awg-helper.
+#
+# The app invokes this via `sudo -n /usr/local/sbin/awg-helper <verb> [args…]`,
+# which is only possible because install-helper.sh writes a NOPASSWD sudoers
+# rule at /etc/sudoers.d/amnezia-cloak scoped to this one binary.
+#
+# Arg vectors only — no positional strings are ever passed through a shell.
+set -e
+
+CONF_DIR=/etc/amnezia/amneziawg
+RUN_DIR=/var/run/amneziawg
+AWG_QUICK=/usr/local/bin/awg-quick
+
+validate_name() {
+    [[ "$1" =~ ^[A-Za-z0-9_-]{1,15}$ ]] \
+        || { echo "bad name: $1" >&2; exit 2; }
+}
+
+flush_dns() {
+    /usr/bin/dscacheutil -flushcache 2>/dev/null || true
+    /usr/bin/killall -HUP mDNSResponder 2>/dev/null || true
+}
+
+# Per-tunnel cleanup — only touches state belonging to this interface.
+cleanup_tunnel() {
+    local name="$1"
+    local name_file="$RUN_DIR/$name.name"
+    local utun=""
+    [[ -r "$name_file" ]] && utun="$(cat "$name_file" 2>/dev/null || true)"
+    /bin/rm -f "$name_file"
+    if [[ -n "$utun" ]]; then
+        /bin/rm -f "$RUN_DIR/$utun.sock"
+        # Kill only the amneziawg-go daemon serving this specific utun (orphans only).
+        /usr/bin/pkill -9 -f "amneziawg-go .*$utun\$" 2>/dev/null || true
+    fi
+}
+
+# Resolve symlinks without depending on /usr/bin/python3 (not guaranteed
+# on a fresh Mac without Xcode Command Line Tools).
+real_path() {
+    local target="$1"
+    local dir
+    dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P)" || return 1
+    printf '%s/%s\n' "$dir" "$(basename "$target")"
+}
+
+case "$1" in
+    up)
+        validate_name "$2"
+        "$AWG_QUICK" up "$2"
+        ;;
+    down)
+        validate_name "$2"
+        "$AWG_QUICK" down "$2" 2>/dev/null || true
+        cleanup_tunnel "$2"
+        flush_dns
+        ;;
+    install)
+        validate_name "$2"
+        [[ -f "$3" ]] || { echo "missing src: $3" >&2; exit 2; }
+        # Confine the source path to a temp directory so the app cannot trick
+        # us into installing arbitrary root-readable files.
+        resolved=$(real_path "$3") || { echo "cannot resolve $3" >&2; exit 3; }
+        case "$resolved" in
+            /private/tmp/*|/tmp/*|/var/folders/*|/private/var/folders/*) ;;
+            *) echo "src not in tmp: $resolved" >&2; exit 3 ;;
+        esac
+        /usr/bin/install -d -m 755 "$CONF_DIR"
+        /usr/bin/install -m 600 "$resolved" "$CONF_DIR/$2.conf"
+        /bin/rm -f "$resolved"
+        ;;
+    delete)
+        validate_name "$2"
+        /bin/rm -f "$CONF_DIR/$2.conf"
+        ;;
+    *)
+        echo "usage: $0 {up|down|install|delete} <name> [src]" >&2
+        exit 1
+        ;;
+esac

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.7] — 2026-04-25
+
+### Added
+- First-run self-install of the privileged helper. On launch, if `/usr/local/sbin/awg-helper` is missing (or not executable), the app shows a single dialog — click "Install…" and macOS prompts for your admin password once. The bundled `install-helper.sh` then copies the helper, writes a `NOPASSWD` sudoers rule at `/etc/sudoers.d/amnezia-cloak` (validated via `visudo -cf` before installing), and seeds `/etc/amnezia/amneziawg`. No Terminal steps needed.
+- `scripts/awg-helper` — portable `/bin/bash` helper (no `/opt/homebrew/bin/bash`, no `/usr/bin/python3` dependency) bundled into `Amnezia Cloak.app/Contents/Resources/`.
+- `scripts/install-helper.sh` — idempotent installer, safe to re-run on upgrades.
+
+### Changed
+- Preflight API is now a typed enum (`helperMissing` / `helperNotExecutable` / `awgToolsMissing` / `ok`) instead of a `String?`, so the UI can act differently per failure mode (self-install vs link-to-upstream).
+- README: drop the "install awg-helper manually" prerequisite; only `amneziawg-go` and `amneziawg-tools` are documented as prerequisites now.
+
 ## [0.6] — 2026-04-25
 
 ### Changed

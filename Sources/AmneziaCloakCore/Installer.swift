@@ -10,44 +10,36 @@ public struct InstallResult {
     }
 }
 
-/// Preflight for the install path. Returns `nil` if everything looks good,
-/// otherwise a human-readable reason string to show in an alert. Runs cheap
-/// filesystem checks only — no subprocess. Call before trying `installConf`
-/// on a freshly-installed machine so users get a specific diagnostic instead
-/// of a generic "Install failed."
-public func installPreflight() -> String? {
+/// What's missing from the install path, if anything.
+public enum InstallPreflight {
+    case ok
+    /// `awg-helper` is not at `/usr/local/sbin/awg-helper`. The app can
+    /// self-install this from its bundle — no manual steps needed.
+    case helperMissing
+    /// `amneziawg-tools` is not at `/usr/local/bin/awg`. The app can't
+    /// provide this itself (it's a third-party binary distribution), so
+    /// the user needs to install it manually.
+    case awgToolsMissing
+    /// Helper exists but isn't executable — unusual, surface it directly.
+    case helperNotExecutable
+}
+
+/// Cheap filesystem-only preflight. No subprocess, no sudo.
+public func installPreflight() -> InstallPreflight {
     let fm = FileManager.default
-    if !fm.fileExists(atPath: Paths.helper) {
-        return """
-            The privileged helper is not installed.
-
-            Expected at: \(Paths.helper)
-
-            See: https://github.com/maloyan/amnezia-cloak#requirements
-            """
-    }
-    if !fm.isExecutableFile(atPath: Paths.helper) {
-        return "The helper at \(Paths.helper) is not executable."
-    }
-    if !fm.fileExists(atPath: Paths.awg) {
-        return """
-            amneziawg-tools is not installed.
-
-            Expected binary: \(Paths.awg)
-
-            See: https://github.com/maloyan/amnezia-cloak#requirements
-            """
-    }
-    return nil
+    if !fm.fileExists(atPath: Paths.helper) { return .helperMissing }
+    if !fm.isExecutableFile(atPath: Paths.helper) { return .helperNotExecutable }
+    if !fm.fileExists(atPath: Paths.awg) { return .awgToolsMissing }
+    return .ok
 }
 
 /// Writes `conf` to a tmp file and hands it to `awg-helper install <name>`.
 /// Returns an `InstallResult` with a specific error message so the UI layer
 /// can show the user *why* the install failed instead of a generic alert.
 public func installConf(_ conf: String, named: String) -> InstallResult {
-    if let preflightError = installPreflight() {
-        return InstallResult(ok: false, error: preflightError)
-    }
+    // Don't block on preflight here — the UI layer handles helper-missing by
+    // offering to self-install. If preflight is still not OK when we get here,
+    // the sudoHelper call will fail with a useful stderr and we'll return that.
     let tmp = NSTemporaryDirectory() + "awg-\(named)-\(Int(Date().timeIntervalSince1970)).conf"
     do {
         try conf.write(toFile: tmp, atomically: true, encoding: .utf8)

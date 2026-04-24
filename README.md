@@ -25,9 +25,10 @@ A minimal macOS menubar client for [AmneziaWG](https://github.com/amnezia-vpn/am
 ## Requirements
 
 - macOS 11 or later.
-- [`amneziawg-go`](https://github.com/amnezia-vpn/amneziawg-go) userspace daemon.
-- [`amneziawg-tools`](https://github.com/amnezia-vpn/amneziawg-tools) (`awg`, `awg-quick`) installed at `/usr/local/bin`.
-- `awg-helper` sudoers wrapper at `/usr/local/sbin` exposing the verbs `install <name> <tmpfile>`, `up <name>`, `down <name>`, `delete <name>`. The app also calls `sudo -n /bin/cat <conf-path>` directly for reading root-owned configs, so `/bin/cat` must also be allowed `NOPASSWD` for the invoking user.
+- [`amneziawg-go`](https://github.com/amnezia-vpn/amneziawg-go) userspace daemon at `/usr/local/bin/amneziawg-go`.
+- [`amneziawg-tools`](https://github.com/amnezia-vpn/amneziawg-tools) (`awg`, `awg-quick`) at `/usr/local/bin/`.
+
+The privileged helper (`/usr/local/sbin/awg-helper`) and the matching sudoers rule are **installed automatically by the app on first launch** — you'll be prompted for your admin password once. No Terminal steps, no manual script running.
 
 ## Install
 

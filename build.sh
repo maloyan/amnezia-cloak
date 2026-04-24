@@ -22,6 +22,9 @@ cp "$ROOT/assets/app-icon.icns"             "$APP/Contents/Resources/AppIcon.icn
 cp "$ROOT/assets/menubar-icon.png"          "$APP/Contents/Resources/menubar-icon.png"
 cp "$ROOT/assets/menubar-icon@2x.png"       "$APP/Contents/Resources/menubar-icon@2x.png"
 cp "$ROOT/assets/menubar-icon@3x.png"       "$APP/Contents/Resources/menubar-icon@3x.png"
+cp "$ROOT/scripts/awg-helper"               "$APP/Contents/Resources/awg-helper"
+cp "$ROOT/scripts/install-helper.sh"        "$APP/Contents/Resources/install-helper.sh"
+chmod +x "$APP/Contents/Resources/awg-helper" "$APP/Contents/Resources/install-helper.sh"
 
 # 3. Ad-hoc sign so Gatekeeper allows unsigned local launch after DMG copy.
 #    No nested content, so --deep is unnecessary (and deprecated since macOS 11).

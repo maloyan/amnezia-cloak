@@ -18,6 +18,93 @@ final class App: NSObject, NSApplicationDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             self?.refreshAsync()
         }
+        // First-run check: offer to self-install the privileged helper if it's
+        // missing. Async so the menubar icon appears immediately.
+        DispatchQueue.main.async { [weak self] in self?.offerSetupIfNeeded() }
+    }
+
+    /// If the preflight says something is missing, show a setup prompt on the
+    /// main thread. Self-installs the helper if the user agrees; surfaces a
+    /// link to the README if `amneziawg-tools` is missing (we can't ship that).
+    private func offerSetupIfNeeded() {
+        switch installPreflight() {
+        case .ok:
+            return
+        case .helperMissing, .helperNotExecutable:
+            let a = NSAlert()
+            a.messageText = "Amnezia Cloak needs a privileged helper"
+            a.informativeText = """
+                To manage AmneziaWG tunnels (install, up/down, delete) \
+                the app needs a small helper installed at \(Paths.helper) \
+                plus a sudoers entry so the app can call it non-interactively.
+
+                Click Install to set this up now — you'll be prompted for \
+                your admin password once.
+                """
+            a.addButton(withTitle: "Install…")
+            a.addButton(withTitle: "Not Now")
+            NSApp.activate(ignoringOtherApps: true)
+            guard a.runModal() == .alertFirstButtonReturn else { return }
+            let result = runHelperSelfInstall()
+            let done = NSAlert()
+            if result.ok {
+                done.messageText = "Helper installed"
+                done.informativeText = "Amnezia Cloak is ready."
+            } else {
+                done.messageText = "Setup failed"
+                done.informativeText = result.error
+            }
+            done.runModal()
+        case .awgToolsMissing:
+            let a = NSAlert()
+            a.messageText = "amneziawg-tools is not installed"
+            a.informativeText = """
+                The app needs `awg` and `awg-quick` at /usr/local/bin/ to \
+                bring tunnels up and down. These are third-party binaries \
+                not shipped by Amnezia Cloak.
+
+                Install them from:
+                https://github.com/amnezia-vpn/amneziawg-tools
+                """
+            a.addButton(withTitle: "OK")
+            NSApp.activate(ignoringOtherApps: true)
+            a.runModal()
+        }
+    }
+
+    /// Run the bundled `install-helper.sh` with admin privileges via
+    /// AppleScript. AppleScript handles the Keychain-style admin prompt for us.
+    private func runHelperSelfInstall() -> InstallResult {
+        guard
+            let helperSrc = Bundle.main.url(forResource: "awg-helper", withExtension: nil),
+            let script = Bundle.main.url(forResource: "install-helper", withExtension: "sh")
+        else {
+            return InstallResult(ok: false, error: "Bundled installer missing from app Resources.")
+        }
+        let user = NSUserName()
+        // Arg-vector into AppleScript's shell string. User-controlled inputs
+        // (helperSrc, script) are bundle URLs we own; user comes from NSUserName()
+        // which is OS-controlled. Still, quote defensively.
+        let quoted: (String) -> String = { s in
+            "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        }
+        let cmd = "\(quoted(script.path)) \(quoted(helperSrc.path)) \(quoted(user))"
+        let source = """
+            do shell script \(quoted(cmd)) with administrator privileges
+            """
+        var err: NSDictionary?
+        let scriptObj = NSAppleScript(source: source)
+        let out = scriptObj?.executeAndReturnError(&err)
+        if let err = err {
+            // user cancelled → -128, other errors have a message
+            let code = (err[NSAppleScript.errorNumber] as? Int) ?? 0
+            if code == -128 { return InstallResult(ok: false, error: "Cancelled.") }
+            let msg = (err[NSAppleScript.errorMessage] as? String) ?? "Unknown osascript error (\(code))."
+            return InstallResult(ok: false, error: msg)
+        }
+        let text = out?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if text == "ok" { return InstallResult(ok: true, error: "") }
+        return InstallResult(ok: false, error: text.isEmpty ? "Installer returned no output." : text)
     }
 
     private func installInvisibleEditMenu() {
