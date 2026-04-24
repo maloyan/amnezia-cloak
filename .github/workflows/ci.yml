@@ -16,10 +16,10 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Cache Swift build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .build
@@ -42,7 +42,7 @@ jobs:
     runs-on: macos-14
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install SwiftLint
         run: brew install swiftlint
@@ -62,13 +62,13 @@ jobs:
     needs: [test, lint]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Build bundle + DMG
         run: ./build.sh
 
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Amnezia-Cloak-dmg
           path: Amnezia-Cloak.dmg
