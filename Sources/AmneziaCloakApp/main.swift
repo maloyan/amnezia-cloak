@@ -1,8 +1,8 @@
+import AmneziaCloakCore
 // Amnezia Cloak — macOS menubar client for AmneziaWG tunnels.
 // Pure UI layer; all testable logic lives in AmneziaCloakCore.
 import Cocoa
 import UniformTypeIdentifiers
-import AmneziaCloakCore
 
 final class App: NSObject, NSApplicationDelegate {
     private var status: NSStatusItem!
@@ -73,10 +73,10 @@ final class App: NSObject, NSApplicationDelegate {
         }
         menu.addItem(.separator())
         addAction(menu, "Import .conf file…", "i", #selector(importFile))
-        addAction(menu, "Paste vpn:// URL…",  "v", #selector(pasteVpnURL))
-        addAction(menu, "Show full status",    "s", #selector(showStatus))
+        addAction(menu, "Paste vpn:// URL…", "v", #selector(pasteVpnURL))
+        addAction(menu, "Show full status", "s", #selector(showStatus))
         menu.addItem(.separator())
-        addAction(menu, "Quit",                "q", #selector(quitApp))
+        addAction(menu, "Quit", "q", #selector(quitApp))
         status.menu = menu
     }
 
@@ -177,7 +177,8 @@ final class App: NSObject, NSApplicationDelegate {
     @objc private func editTunnel(_ sender: NSMenuItem) {
         guard let t = sender.representedObject as? Tunnel else { return }
         let content = readConfViaSudo(t.path)
-        let current = content.isEmpty
+        let current =
+            content.isEmpty
             ? (try? String(contentsOfFile: t.path, encoding: .utf8)) ?? ""
             : content
 

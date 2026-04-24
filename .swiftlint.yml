@@ -1,0 +1,44 @@
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+  - build
+
+# Match the style we already ship: one-file-per-type with multiple tiny types
+# (Paths, Tunnel struct, VPNURL enum) is normal here, and main.swift is a
+# menubar app with a single App class that owns most of the UI glue.
+disabled_rules:
+  - trailing_whitespace   # handled by swift-format
+  - todo                  # TODO/FIXME are explicit tech-debt markers, not violations
+  - identifier_name       # short names (t, p, n) are idiomatic inside local scopes
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - implicit_return
+  - last_where
+  - unneeded_parentheses_in_closure_argument
+
+line_length:
+  warning: 140
+  error: 200
+
+function_body_length:
+  warning: 80
+  error: 150
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 500
+  error: 800
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25

@@ -1,5 +1,5 @@
-import Foundation
 import Compression
+import Foundation
 
 public enum VPNURL {
     public struct Parsed {
@@ -34,16 +34,17 @@ public enum VPNURL {
         guard let decompressed = zlibDecompress(deflatePayload, expectedSize: expectedSize) else { return nil }
 
         guard let obj = try? JSONSerialization.jsonObject(with: decompressed) as? [String: Any],
-              let containers = obj["containers"] as? [[String: Any]],
-              let container = containers.first(where: { ($0["container"] as? String) == "amnezia-awg" })
+            let containers = obj["containers"] as? [[String: Any]],
+            let container = containers.first(where: { ($0["container"] as? String) == "amnezia-awg" })
         else { return nil }
 
-        let awg = (container["awg"] as? [String: Any])
+        let awg =
+            (container["awg"] as? [String: Any])
             ?? (container["amnezia-awg"] as? [String: Any])
             ?? [:]
 
         guard let lastStr = awg["last_config"] as? String,
-              let inner = try? JSONSerialization.jsonObject(with: Data(lastStr.utf8)) as? [String: Any]
+            let inner = try? JSONSerialization.jsonObject(with: Data(lastStr.utf8)) as? [String: Any]
         else { return nil }
 
         let conf = (inner["config"] as? String) ?? ""

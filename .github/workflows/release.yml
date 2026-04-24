@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build DMG & publish GitHub Release
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build bundle + DMG
+        run: ./build.sh
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Amnezia-Cloak.dmg
+          generate_release_notes: true
+          fail_on_unmatched_files: true

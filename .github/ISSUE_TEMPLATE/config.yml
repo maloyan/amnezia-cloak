@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: AmneziaWG protocol / obfuscation question
+    url: https://github.com/amnezia-vpn/amneziawg-go/issues
+    about: Questions about AmneziaWG protocol behavior, obfuscation parameters, or the userspace daemon belong upstream.
+  - name: General Amnezia VPN app question
+    url: https://github.com/amnezia-vpn/amnezia-client/issues
+    about: This repo only covers the macOS menubar client. General Amnezia VPN app issues belong upstream.

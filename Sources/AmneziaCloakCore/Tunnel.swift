@@ -11,7 +11,8 @@ public struct Tunnel: Hashable {
 
 public func listTunnels() -> [Tunnel] {
     guard let files = try? FileManager.default.contentsOfDirectory(atPath: Paths.confDir) else { return [] }
-    return files
+    return
+        files
         .filter { $0.hasSuffix(".conf") }
         .map { Tunnel(name: String($0.dropLast(5)), path: "\(Paths.confDir)/\($0)") }
         .sorted { $0.name < $1.name }

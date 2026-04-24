@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import AmneziaCloakCore
 
 final class TunnelNameTests: XCTestCase {
