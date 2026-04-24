@@ -12,9 +12,33 @@ jobs:
   release:
     name: Build DMG & publish GitHub Release
     runs-on: macos-14
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build amneziawg-tools (awg, awg-quick)
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/amnezia-vpn/amneziawg-tools.git /tmp/awg-tools
+          cd /tmp/awg-tools/src
+          make PLATFORM=darwin
+          mkdir -p "$GITHUB_WORKSPACE/scripts/bin"
+          cp awg awg-quick "$GITHUB_WORKSPACE/scripts/bin/"
+          file "$GITHUB_WORKSPACE/scripts/bin/"awg*
+
+      - name: Build amneziawg-go
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/amnezia-vpn/amneziawg-go.git /tmp/awg-go
+          cd /tmp/awg-go
+          go build -trimpath -ldflags "-s -w" -o amneziawg-go .
+          cp amneziawg-go "$GITHUB_WORKSPACE/scripts/bin/amneziawg-go"
+          file "$GITHUB_WORKSPACE/scripts/bin/amneziawg-go"
 
       - name: Build bundle + DMG
         run: ./build.sh

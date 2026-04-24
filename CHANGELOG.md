@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.10] — 2026-04-25
+
+### Added
+- **DMG now ships with prebuilt `awg`, `awg-quick`, and `amneziawg-go` binaries.** The release workflow clones `amnezia-vpn/amneziawg-tools` and `amnezia-vpn/amneziawg-go`, builds both on `macos-14`, and bundles the outputs under `Amnezia Cloak.app/Contents/Resources/bin/`. First-run setup copies them to `/usr/local/bin/` in the same admin prompt as the helper — zero external install steps for arm64 Macs.
+- `install-helper.sh` now takes the bundle Resources dir (not just the helper path) so it can discover and install everything in one pass, strips `com.apple.quarantine` from copied binaries so Gatekeeper doesn't block exec.
+- Unified setup prompt: one alert listing everything that will be installed (helper + CLI binaries + sudoers), one admin prompt, done.
+
+### Changed
+- `runHelperSelfInstall` passes the `.app`'s `Contents/Resources` directory instead of individual file paths.
+- Local dev builds (no prebuilt binaries under `scripts/bin/`) still fall back to the upstream-link prompt when `amneziawg-tools` / `amneziawg-go` are missing — the bundled-binaries path is a release-only feature.
+
 ## [0.9] — 2026-04-25
 
 ### Fixed

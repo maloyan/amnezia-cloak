@@ -23,52 +23,83 @@ final class App: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async { [weak self] in self?.offerSetupIfNeeded() }
     }
 
-    /// If the preflight says something is missing, show a setup prompt on the
-    /// main thread. Self-installs the helper if the user agrees; surfaces a
-    /// link to the README if `amneziawg-tools` is missing (we can't ship that).
+    /// If the preflight says anything is missing, show a single setup prompt
+    /// that installs helper + bundled CLI binaries + sudoers rule in one
+    /// admin prompt. If the .app doesn't bundle CLI binaries (happens on
+    /// local dev builds) we fall back to the "install from upstream" link.
     private func offerSetupIfNeeded() {
-        switch installPreflight() {
-        case .ok:
-            return
-        case .helperMissing, .helperNotExecutable:
-            let a = NSAlert()
-            a.messageText = "Amnezia Cloak needs a privileged helper"
-            a.informativeText = """
-                To manage AmneziaWG tunnels (install, up/down, delete) \
-                the app needs a small helper installed at \(Paths.helper) \
-                plus a sudoers entry so the app can call it non-interactively.
+        let preflight = installPreflight()
+        if case .ok = preflight { return }
 
-                Click Install to set this up now — you'll be prompted for \
-                your admin password once.
-                """
-            a.addButton(withTitle: "Install…")
-            a.addButton(withTitle: "Not Now")
-            NSApp.activate(ignoringOtherApps: true)
-            guard a.runModal() == .alertFirstButtonReturn else { return }
-            let result = runHelperSelfInstall()
-            let done = NSAlert()
-            if result.ok {
-                done.messageText = "Helper installed"
-                done.informativeText = "Amnezia Cloak is ready."
-            } else {
-                done.messageText = "Setup failed"
-                done.informativeText = result.error
-            }
-            done.runModal()
-        case .awgToolsMissing:
+        // If bundled binaries exist, offer to install everything — one admin
+        // prompt gets the user fully set up without any Terminal steps.
+        let hasBundledBinaries =
+            Bundle.main.url(
+                forResource: "amneziawg-go",
+                withExtension: nil,
+                subdirectory: "bin"
+            ) != nil
+        if !hasBundledBinaries, case .awgToolsMissing = preflight {
             showAwgToolsMissingAlert()
+            return
+        }
+
+        let missingPieces = preflightSummary(preflight)
+        let a = NSAlert()
+        a.messageText = "Amnezia Cloak needs to complete setup"
+        a.informativeText = """
+            The following will be installed with one admin prompt:
+
+            \(missingPieces)
+
+            Click Install to proceed — you'll be asked for your password once.
+            """
+        a.addButton(withTitle: "Install…")
+        a.addButton(withTitle: "Not Now")
+        NSApp.activate(ignoringOtherApps: true)
+        guard a.runModal() == .alertFirstButtonReturn else { return }
+
+        let result = runHelperSelfInstall()
+        let done = NSAlert()
+        if result.ok {
+            done.messageText = "Setup complete"
+            done.informativeText = "Amnezia Cloak is ready."
+        } else {
+            done.messageText = "Setup failed"
+            done.informativeText = result.error
+        }
+        done.runModal()
+    }
+
+    private func preflightSummary(_ p: InstallPreflight) -> String {
+        switch p {
+        case .ok:
+            return ""
+        case .helperMissing, .helperNotExecutable:
+            return """
+                • Privileged helper at \(Paths.helper)
+                • amneziawg-tools (awg, awg-quick) and amneziawg-go at /usr/local/bin/
+                • Sudoers rule so the app can call the helper without a password prompt
+                """
+        case .awgToolsMissing:
+            return """
+                • amneziawg-tools (awg, awg-quick) and amneziawg-go at /usr/local/bin/
+                """
         }
     }
 
     /// Run the bundled `install-helper.sh` with admin privileges via
     /// AppleScript. AppleScript handles the Keychain-style admin prompt for us.
+    /// We pass the .app's Contents/Resources directory so the installer can
+    /// pick up both the helper script and any prebuilt CLI binaries bundled
+    /// under bin/ (awg, awg-quick, amneziawg-go in release DMGs).
     private func runHelperSelfInstall() -> InstallResult {
         guard
-            let helperSrc = Bundle.main.url(forResource: "awg-helper", withExtension: nil),
             let script = Bundle.main.url(forResource: "install-helper", withExtension: "sh")
         else {
             return InstallResult(ok: false, error: "Bundled installer missing from app Resources.")
         }
+        let resourcesDir = script.deletingLastPathComponent().path
         let user = NSUserName()
 
         // Two different quoting levels to get right:
@@ -88,7 +119,7 @@ final class App: NSObject, NSApplicationDelegate {
                 .replacingOccurrences(of: "\"", with: "\\\"")
             return "\"\(escaped)\""
         }
-        let cmd = [script.path, helperSrc.path, user]
+        let cmd = [script.path, resourcesDir, user]
             .map(shellQuote)
             .joined(separator: " ")
         let source = "do shell script \(applescriptQuote(cmd)) with administrator privileges"

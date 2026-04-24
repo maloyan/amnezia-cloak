@@ -26,6 +26,17 @@ cp "$ROOT/scripts/awg-helper"               "$APP/Contents/Resources/awg-helper"
 cp "$ROOT/scripts/install-helper.sh"        "$APP/Contents/Resources/install-helper.sh"
 chmod +x "$APP/Contents/Resources/awg-helper" "$APP/Contents/Resources/install-helper.sh"
 
+# Bundle prebuilt CLI binaries if release-workflow produced them. On local
+# dev builds this directory is empty and the first-run installer will point
+# the user at upstream install links.
+if [ -d "$ROOT/scripts/bin" ] && compgen -G "$ROOT/scripts/bin/*" > /dev/null; then
+    mkdir -p "$APP/Contents/Resources/bin"
+    cp "$ROOT/scripts/bin/"* "$APP/Contents/Resources/bin/"
+    chmod +x "$APP/Contents/Resources/bin/"*
+    echo "bundled binaries:"
+    ls -la "$APP/Contents/Resources/bin/"
+fi
+
 # 3. Ad-hoc sign so Gatekeeper allows unsigned local launch after DMG copy.
 #    No nested content, so --deep is unnecessary (and deprecated since macOS 11).
 codesign --force --sign - "$APP"
