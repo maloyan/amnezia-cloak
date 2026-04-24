@@ -30,6 +30,7 @@ HELPER_SRC="$RESOURCES/awg-helper"
 HELPER_DST=/usr/local/sbin/awg-helper
 BIN_SRC="$RESOURCES/bin"
 BIN_DST=/usr/local/bin
+LIBEXEC_DST=/usr/local/libexec/amnezia-cloak
 SUDOERS_DST=/etc/sudoers.d/amnezia-cloak
 CONF_DIR=/etc/amnezia/amneziawg
 
@@ -51,6 +52,18 @@ if [[ -d "$BIN_SRC" ]]; then
         /usr/bin/install -o root -g wheel -m 755 "$src" "$BIN_DST/$bin"
         /usr/bin/xattr -d com.apple.quarantine "$BIN_DST/$bin" 2>/dev/null || true
     done
+fi
+
+# 2b. Install bundled bash 5 into a private libexec dir. macOS ships bash 3.2
+#     at /bin/bash (stuck on that version for GPL2-licensing reasons), but
+#     awg-quick's darwin.bash uses bash 4+ features (associative arrays, etc).
+#     We install to a private path instead of /usr/local/bin so we don't clash
+#     with anyone's Homebrew bash; awg-helper prepends this dir to PATH before
+#     calling awg-quick, so `#!/usr/bin/env bash` picks up our build.
+if [[ -f "$BIN_SRC/bash" ]]; then
+    /usr/bin/install -d -o root -g wheel -m 755 "$LIBEXEC_DST"
+    /usr/bin/install -o root -g wheel -m 755 "$BIN_SRC/bash" "$LIBEXEC_DST/bash"
+    /usr/bin/xattr -d com.apple.quarantine "$LIBEXEC_DST/bash" 2>/dev/null || true
 fi
 
 # 3. Seed config dir (helper also does this, but we want it ready on first launch).

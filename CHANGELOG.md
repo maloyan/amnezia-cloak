@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.11] — 2026-04-25
+
+### Added
+- **Bundle bash 5 with the DMG.** macOS ships bash 3.2 at `/bin/bash` (frozen at that version for GPL2-licensing reasons), but `awg-quick`'s `darwin.bash` uses bash 4+ features — fresh Macs failed with `awg-quick: version mismatch: bash 3 detected, when bash 4+ required`. CI now builds bash 5.2.37 from source on `macos-14` (`configure --disable-nls --without-bash-malloc && make`), and `install-helper.sh` drops it at `/usr/local/libexec/amnezia-cloak/bash` — private path, won't clash with Homebrew's `/opt/homebrew/bin/bash`.
+- `awg-helper` prepends `/usr/local/libexec/amnezia-cloak` to `PATH` before invoking `awg-quick`, so `#!/usr/bin/env bash` inside `awg-quick` resolves to our build automatically.
+
 ## [0.10] — 2026-04-25
 
 ### Added

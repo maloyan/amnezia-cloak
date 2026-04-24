@@ -8,6 +8,11 @@
 # Arg vectors only — no positional strings are ever passed through a shell.
 set -e
 
+# awg-quick's darwin.bash requires bash 4+ (associative arrays etc).
+# macOS ships 3.2 at /bin/bash. install-helper.sh drops a modern bash here;
+# prepend so `#!/usr/bin/env bash` in awg-quick resolves to our build.
+export PATH="/usr/local/libexec/amnezia-cloak:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+
 CONF_DIR=/etc/amnezia/amneziawg
 RUN_DIR=/var/run/amneziawg
 AWG_QUICK=/usr/local/bin/awg-quick

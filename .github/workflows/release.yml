@@ -21,6 +21,21 @@ jobs:
         with:
           go-version: '1.22'
 
+      - name: Build bash 5 (awg-quick requires bash 4+, macOS only has 3.2)
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/bash-build
+          curl -fsSL https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz \
+               -o /tmp/bash-build/bash.tgz
+          tar -xf /tmp/bash-build/bash.tgz -C /tmp/bash-build --strip-components 1
+          cd /tmp/bash-build
+          ./configure --disable-nls --without-bash-malloc --prefix=/usr/local >/dev/null
+          make -j$(sysctl -n hw.logicalcpu) >/dev/null
+          mkdir -p "$GITHUB_WORKSPACE/scripts/bin"
+          cp bash "$GITHUB_WORKSPACE/scripts/bin/bash"
+          "$GITHUB_WORKSPACE/scripts/bin/bash" --version | head -1
+          file "$GITHUB_WORKSPACE/scripts/bin/bash"
+
       - name: Build amneziawg-tools (awg, awg-quick)
         run: |
           set -euo pipefail
