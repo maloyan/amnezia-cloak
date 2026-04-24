@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.6] — 2026-04-25
+
+### Changed
+- Install errors surface the real cause — previously every failure path collapsed to a generic `Install failed.` alert. `sudoHelper` now returns the full `ShellResult`; `installConf` returns a new `InstallResult` with a specific, user-visible error message.
+- Added `installPreflight()` that checks `/usr/local/sbin/awg-helper` and `/usr/local/bin/awg` exist + are executable before attempting a privileged call, so users on a freshly-installed Mac see a pointed "helper not installed" message with a link to the README Requirements section instead of a silent failure.
+- Sudo-denied stderr (`"a password is required"`) is special-cased with an explicit "NOPASSWD sudoers rule required" hint.
+
 ## [0.5] — 2026-04-25
 
 ### Added
