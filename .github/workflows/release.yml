@@ -50,39 +50,14 @@ jobs:
           cp wg              "$GITHUB_WORKSPACE/scripts/bin/awg"
           cp wg-quick/darwin.bash "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
           chmod +x "$GITHUB_WORKSPACE/scripts/bin/awg" "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
-          # amneziawg-tools' Makefile copies darwin.bash verbatim, but the
-          # script as-shipped is missing three patches Amnezia's own macOS
-          # installer applies. Without them the daemon-startup races and
-          # silently bails. We re-implement all three here:
-          #
-          #   1. `wg ` → `awg ` — binary was renamed at install time, but the
-          #      script still calls `wg show/setconf/showconf`.
-          #   2. `/var/run/wireguard/` → `/var/run/amneziawg/` — cleanup paths
-          #      point at the WireGuard runtime dir, not AmneziaWG's.
-          #   3. Insert `sleep 0.3; chmod 444 "$WG_TUN_NAME_FILE"` after the
-          #      `amneziawg-go utun` call. Without the sleep, get_real_interface
-          #      checks for the .name file before the daemon has written it,
-          #      returns 1, and add_if bails.
-          #
-          # Perl is used because BSD sed on macos-14 doesn't support \b in
-          # its extended-regex mode (v0.13 sed attempt silently matched zero
-          # lines and shipped an unpatched script).
-          perl -i -ne '
-              s{\bwg }{awg }g;
-              s{/var/run/wireguard/}{/var/run/amneziawg/}g;
-              print;
-              if (/cmd "?\$\{WG_QUICK_USERSPACE_IMPLEMENTATION:-amneziawg-go\}"? utun/) {
-                  print "\tsleep 0.3; chmod 444 \"\$WG_TUN_NAME_FILE\" 2>/dev/null\n";
-              }
-          ' "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
-          # Assertions — any of these returning 0 means a patch silently no-op'd.
-          awg_calls=$(grep -cE '(^| |	|\()awg (show|setconf|showconf)' "$GITHUB_WORKSPACE/scripts/bin/awg-quick")
-          amnz_paths=$(grep -c '/var/run/amneziawg/' "$GITHUB_WORKSPACE/scripts/bin/awg-quick")
-          wg_leftovers=$(grep -c '/var/run/wireguard/' "$GITHUB_WORKSPACE/scripts/bin/awg-quick")
-          sleep_inserted=$(grep -c 'sleep 0.3; chmod 444' "$GITHUB_WORKSPACE/scripts/bin/awg-quick")
-          echo "patches: awg-calls=$awg_calls amneziawg-paths=$amnz_paths wg-leftovers=$wg_leftovers sleep=$sleep_inserted"
-          [ "$awg_calls" -ge 7 ] && [ "$amnz_paths" -ge 8 ] && [ "$wg_leftovers" -eq 0 ] && [ "$sleep_inserted" -eq 1 ] \
-              || { echo "awg-quick patch failed sanity check"; exit 1; }
+          # Apply the three post-install patches Amnezia's canonical macOS
+          # installer does on top of what `make install` ships (wg→awg exec
+          # calls, /var/run/wireguard→/var/run/amneziawg, and the daemon-race
+          # `sleep 0.3; chmod 444` after amneziawg-go utun). Script lives at
+          # scripts/patch-awg-quick.pl; it self-asserts patch counts and
+          # aborts on silent no-op.
+          perl "$GITHUB_WORKSPACE/scripts/patch-awg-quick.pl" \
+               "$GITHUB_WORKSPACE/scripts/bin/awg-quick"
           file "$GITHUB_WORKSPACE/scripts/bin/"awg*
 
       - name: Build amneziawg-go
