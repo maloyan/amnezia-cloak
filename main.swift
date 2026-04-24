@@ -136,14 +136,13 @@ class App: NSObject, NSApplicationDelegate {
     func applyState(tunnels: [Tunnel], active activeSet: Set<String>) {
         let primary = activeSet.sorted().first
 
-        // Menubar: bundled MenubarIcon.png as template image (alpha → menubar tint).
+        // Menubar: bundled MenubarIcon as template image (alpha → menubar tint).
+        // NSImage(named:) auto-resolves MenubarIcon@2x/@3x for crisp Retina rendering.
         // Falls back to SF Symbol if resource is missing (loose-binary run).
         if let btn = status.button {
             let img: NSImage? = {
-                if let url = Bundle.main.url(forResource: "MenubarIcon", withExtension: "png"),
-                   let i = NSImage(contentsOf: url) {
-                    // 22pt matches NSStatusBar.system.thickness — icon fills the full menubar slot.
-                    i.size = NSSize(width: 22, height: 22)
+                if let i = NSImage(named: "MenubarIcon") {
+                    i.size = NSSize(width: 18, height: 18)  // pt; @2x/@3x pick matching raster
                     i.isTemplate = true
                     return i
                 }
