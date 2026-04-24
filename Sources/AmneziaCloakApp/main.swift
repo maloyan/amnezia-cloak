@@ -9,11 +9,44 @@ final class App: NSObject, NSApplicationDelegate {
     private var timer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // LSUIElement apps have no menu bar, but AppKit still routes Cmd-X/C/V/A
+        // through NSApp.mainMenu's key equivalents. Without an Edit menu, paste
+        // into NSAlert text fields silently fails. The menu is never rendered.
+        installInvisibleEditMenu()
         status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             self?.refreshAsync()
         }
+    }
+
+    private func installInvisibleEditMenu() {
+        let main = NSMenu()
+        let editItem = NSMenuItem()
+        main.addItem(editItem)
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(
+            withTitle: "Cut",
+            action: #selector(NSText.cut(_:)),
+            keyEquivalent: "x"
+        )
+        edit.addItem(
+            withTitle: "Copy",
+            action: #selector(NSText.copy(_:)),
+            keyEquivalent: "c"
+        )
+        edit.addItem(
+            withTitle: "Paste",
+            action: #selector(NSText.paste(_:)),
+            keyEquivalent: "v"
+        )
+        edit.addItem(
+            withTitle: "Select All",
+            action: #selector(NSText.selectAll(_:)),
+            keyEquivalent: "a"
+        )
+        editItem.submenu = edit
+        NSApp.mainMenu = main
     }
 
     /// Gather state off the main thread; apply on main.
