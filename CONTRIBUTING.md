@@ -11,7 +11,9 @@ Open an issue first if your change is more than a bug fix or a small nit. A lot 
 ```sh
 git clone https://github.com/maloyan/amnezia-cloak.git
 cd amnezia-cloak
-brew install swiftlint swift-format
+brew install swiftlint swift-format pre-commit
+pre-commit install              # runs lint + format on every commit
+pre-commit install --hook-type pre-push   # runs tests on push
 swift test
 ```
 
