@@ -180,11 +180,36 @@ final class App: NSObject, NSApplicationDelegate {
         a.informativeText = "Paste the Amnezia connection key (starts with vpn://)"
         a.addButton(withTitle: "Import")
         a.addButton(withTitle: "Cancel")
-        let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 400, height: 22))
-        a.accessoryView = input
+
+        // NSTextField is single-line; a 900+ char base64url URL gets clipped so
+        // the user only sees the tail. Use a wrapping NSTextView inside a
+        // scroll view so the whole URL is visible at paste time.
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 520, height: 120))
+        scroll.hasVerticalScroller = true
+        scroll.borderType = .bezelBorder
+        let input = NSTextView(frame: scroll.bounds)
+        input.isEditable = true
+        input.isRichText = false
+        input.font = NSFont(name: "Menlo", size: 11) ?? NSFont.userFixedPitchFont(ofSize: 11)
+        input.textContainer?.widthTracksTextView = true
+        input.textContainer?.containerSize = NSSize(
+            width: scroll.frame.width,
+            height: .greatestFiniteMagnitude
+        )
+        input.isAutomaticDataDetectionEnabled = false
+        input.isAutomaticLinkDetectionEnabled = false
+        input.isAutomaticQuoteSubstitutionEnabled = false
+        input.isAutomaticDashSubstitutionEnabled = false
+        input.isAutomaticTextReplacementEnabled = false
+        input.isAutomaticSpellingCorrectionEnabled = false
+        scroll.documentView = input
+        a.accessoryView = scroll
+
         NSApp.activate(ignoringOtherApps: true)
+        // Focus the text view so Cmd-V lands without an extra click.
+        DispatchQueue.main.async { a.window.makeFirstResponder(input) }
         guard a.runModal() == .alertFirstButtonReturn else { return }
-        let url = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let url = input.string.trimmingCharacters(in: .whitespacesAndNewlines)
         guard url.hasPrefix("vpn://") else { alert("Not a vpn:// URL."); return }
         DispatchQueue.global().async { [weak self] in
             guard let parsed = VPNURL.parse(url) else {
