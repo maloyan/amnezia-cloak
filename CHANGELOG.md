@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+### Removed
+- CodeQL workflow. For a 350-line Swift app with zero external deps and three narrow input surfaces (all regex-validated or fed through a unit-tested pure-Swift decoder), CodeQL's weekly ~600 billable minutes on macOS runners was not worth what it found. Security posture is carried by the `awg-helper` arg-vector pattern, `validatedTunnelName`, unit-tested `VPNURL.parse`, and `SECURITY.md`.
+
 ## [0.4] — 2026-04-25
 
 ### Added
