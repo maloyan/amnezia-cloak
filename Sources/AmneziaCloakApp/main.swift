@@ -167,9 +167,9 @@ final class App: NSObject, NSApplicationDelegate {
             return
         }
         DispatchQueue.global().async { [weak self] in
-            let ok = installConf(conf, named: name)
+            let r = installConf(conf, named: name)
             DispatchQueue.main.async {
-                self?.alert(ok ? "Imported tunnel: \(name)" : "Install failed.")
+                self?.alert(r.ok ? "Imported tunnel: \(name)" : "Install failed.\n\n\(r.error)")
                 self?.refresh()
             }
         }
@@ -225,9 +225,9 @@ final class App: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.async { self?.alert("Decoded tunnel name invalid: \(parsed.name)") }
                 return
             }
-            let ok = installConf(parsed.conf, named: name)
+            let r = installConf(parsed.conf, named: name)
             DispatchQueue.main.async {
-                self?.alert(ok ? "Imported tunnel: \(name)" : "Install failed.")
+                self?.alert(r.ok ? "Imported tunnel: \(name)" : "Install failed.\n\n\(r.error)")
                 self?.refresh()
             }
         }
@@ -256,11 +256,8 @@ final class App: NSObject, NSApplicationDelegate {
         a.addButton(withTitle: "Cancel")
         NSApp.activate(ignoringOtherApps: true)
         guard a.runModal() == .alertFirstButtonReturn else { return }
-        if installConf(tv.string, named: t.name) {
-            alert("Saved \(t.name).conf. Restart tunnel to apply changes.")
-        } else {
-            alert("Save failed.")
-        }
+        let r = installConf(tv.string, named: t.name)
+        alert(r.ok ? "Saved \(t.name).conf. Restart tunnel to apply changes." : "Save failed.\n\n\(r.error)")
     }
 
     @objc private func deleteTunnel(_ sender: NSMenuItem) {

@@ -30,7 +30,8 @@ public func bash(_ cmd: String) -> String {
 
 /// Call the privileged helper via `sudo -n`. Arg vector is never concatenated into a
 /// shell string — no injection surface. Requires a `NOPASSWD` sudoers rule.
+/// Returns the full `ShellResult` so callers can surface stderr on failure.
 @discardableResult
-public func sudoHelper(_ args: [String]) -> Bool {
-    shell(Paths.sudo, ["-n", Paths.helper] + args).code == 0
+public func sudoHelper(_ args: [String]) -> ShellResult {
+    shell(Paths.sudo, ["-n", Paths.helper] + args)
 }
