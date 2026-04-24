@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.12] — 2026-04-25
+
+### Fixed
+- **Auto-detect version drift on launch and prompt to re-run the installer.** Users who installed v0.10 and then dropped v0.11 into `/Applications` kept hitting `awg-quick: version mismatch: bash 3 detected` because the old v0.10 helper (without the PATH fix) was still at `/usr/local/sbin/awg-helper`. Preflight previously saw "helper exists" and returned `.ok`. Now `install-helper.sh` stamps `/usr/local/libexec/amnezia-cloak/VERSION` with the app version, and preflight reads it back; any mismatch (or missing VERSION file) triggers a setup prompt with an "Update…" button that re-runs the installer.
+- Tunnel toggle also treats version drift the same as missing helper — won't let you click a tunnel against a stale helper.
+
+### Added
+- `InstallPreflight.needsUpdate(installed, current)` case.
+- Upgrade prompt: "Amnezia Cloak is out of date on this Mac" / "Update…" button instead of "Install…" when the issue is version drift rather than a fresh install.
+
+### Changed
+- `installPreflight()` now takes `currentAppVersion:` so it can compare against the installed VERSION file. App passes `CFBundleShortVersionString` from its own bundle.
+- `install-helper.sh` signature is now `<bundle-resources-dir> <invoking-user> <app-version>`; it writes the app version to `/usr/local/libexec/amnezia-cloak/VERSION` at the end of a successful run.
+
 ## [0.11] — 2026-04-25
 
 ### Added

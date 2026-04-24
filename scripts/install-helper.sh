@@ -1,30 +1,34 @@
 #!/bin/bash
 # First-run installer for Amnezia Cloak.
 #
-# Usage:  sudo install-helper.sh <bundle-resources-dir> <invoking-user>
+# Usage:  sudo install-helper.sh <bundle-resources-dir> <invoking-user> <app-version>
 #
 # bundle-resources-dir points at the .app's Contents/Resources directory,
 # so we can pick up both the helper script AND any prebuilt CLI binaries
-# (awg, awg-quick, amneziawg-go) that the release workflow placed under
-# bin/. The release DMG ships all of these; a local dev build ships only
-# the helper.
+# (awg, awg-quick, amneziawg-go, bash) that the release workflow placed
+# under bin/. The release DMG ships all of these; a local dev build ships
+# only the helper.
 #
 # Installed:
-#   /usr/local/sbin/awg-helper          (0755 root:wheel)
-#   /usr/local/bin/awg                  (if bundled)
-#   /usr/local/bin/awg-quick            (if bundled)
-#   /usr/local/bin/amneziawg-go         (if bundled)
-#   /etc/sudoers.d/amnezia-cloak        (0440 root:wheel, NOPASSWD scoped)
-#   /etc/amnezia/amneziawg/             (0755 root:wheel)
+#   /usr/local/sbin/awg-helper                         (0755 root:wheel)
+#   /usr/local/bin/awg                                 (if bundled)
+#   /usr/local/bin/awg-quick                           (if bundled)
+#   /usr/local/bin/amneziawg-go                        (if bundled)
+#   /usr/local/libexec/amnezia-cloak/bash              (if bundled)
+#   /usr/local/libexec/amnezia-cloak/VERSION           (the app version)
+#   /etc/sudoers.d/amnezia-cloak                       (0440 root:wheel)
+#   /etc/amnezia/amneziawg/                            (0755 root:wheel)
 #
 # Called from the app via `osascript` + `with administrator privileges` so
 # the user is prompted for their password exactly once. Idempotent — safe
-# to re-run on upgrade.
+# to re-run on upgrade (and we REQUIRE it on upgrade — the app compares
+# VERSION to its own CFBundleShortVersionString and re-prompts on drift).
 
 set -eu
 
 RESOURCES="${1:?missing bundle resources directory}"
 USER_NAME="${2:?missing invoking user}"
+APP_VERSION="${3:?missing app version}"
 
 HELPER_SRC="$RESOURCES/awg-helper"
 HELPER_DST=/usr/local/sbin/awg-helper
@@ -60,11 +64,17 @@ fi
 #     We install to a private path instead of /usr/local/bin so we don't clash
 #     with anyone's Homebrew bash; awg-helper prepends this dir to PATH before
 #     calling awg-quick, so `#!/usr/bin/env bash` picks up our build.
+/usr/bin/install -d -o root -g wheel -m 755 "$LIBEXEC_DST"
 if [[ -f "$BIN_SRC/bash" ]]; then
-    /usr/bin/install -d -o root -g wheel -m 755 "$LIBEXEC_DST"
     /usr/bin/install -o root -g wheel -m 755 "$BIN_SRC/bash" "$LIBEXEC_DST/bash"
     /usr/bin/xattr -d com.apple.quarantine "$LIBEXEC_DST/bash" 2>/dev/null || true
 fi
+
+# 2c. Stamp the installed app version so the app can detect upgrades and
+#     re-run the installer automatically (see InstallPreflight in Core).
+printf '%s\n' "$APP_VERSION" > "$LIBEXEC_DST/VERSION"
+/usr/sbin/chown root:wheel "$LIBEXEC_DST/VERSION"
+/bin/chmod 644 "$LIBEXEC_DST/VERSION"
 
 # 3. Seed config dir (helper also does this, but we want it ready on first launch).
 /usr/bin/install -d -o root -g wheel -m 755 "$CONF_DIR"

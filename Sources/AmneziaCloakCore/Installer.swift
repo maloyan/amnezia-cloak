@@ -11,7 +11,7 @@ public struct InstallResult {
 }
 
 /// What's missing from the install path, if anything.
-public enum InstallPreflight {
+public enum InstallPreflight: Equatable {
     case ok
     /// `awg-helper` is not at `/usr/local/sbin/awg-helper`. The app can
     /// self-install this from its bundle — no manual steps needed.
@@ -22,20 +22,37 @@ public enum InstallPreflight {
     case awgToolsMissing
     /// Helper exists but isn't executable — unusual, surface it directly.
     case helperNotExecutable
+    /// Helper + tools exist, but the stamped VERSION file differs from
+    /// the app's own version (or is missing entirely). Happens on app
+    /// upgrade: the user installed v0.10 and just dropped v0.11 into
+    /// /Applications — the new bundled helper/bash/binaries haven't been
+    /// copied to their system paths yet, and using the old helper means
+    /// old bugs persist. Re-running the installer brings everything up
+    /// to the new app version.
+    case needsUpdate(installed: String, current: String)
 }
 
 /// Cheap filesystem-only preflight. No subprocess, no sudo.
-public func installPreflight() -> InstallPreflight {
+/// `currentAppVersion` should be `CFBundleShortVersionString` from Info.plist;
+/// we compare against the VERSION file written by install-helper.sh to detect
+/// upgrades.
+public func installPreflight(currentAppVersion: String) -> InstallPreflight {
     let fm = FileManager.default
     if !fm.fileExists(atPath: Paths.helper) { return .helperMissing }
     if !fm.isExecutableFile(atPath: Paths.helper) { return .helperNotExecutable }
-    // All three are needed: `awg` for status, `awg-quick` to bring the tunnel
-    // up/down, and `amneziawg-go` as the userspace daemon `awg-quick` spawns
-    // on macOS. Missing any one means `up` will fail silently without this
-    // check.
+    // All three CLI pieces are needed: `awg` for status, `awg-quick` to bring
+    // the tunnel up/down, and `amneziawg-go` as the userspace daemon
+    // `awg-quick` spawns on macOS.
     if !fm.fileExists(atPath: Paths.awg) { return .awgToolsMissing }
     if !fm.fileExists(atPath: Paths.awgQuick) { return .awgToolsMissing }
     if !fm.fileExists(atPath: Paths.amneziawgGo) { return .awgToolsMissing }
+    // Version drift: compare stamped VERSION with the running app's version.
+    let installedVersion =
+        (try? String(contentsOfFile: Paths.libexecVersion, encoding: .utf8))?
+        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    if installedVersion != currentAppVersion {
+        return .needsUpdate(installed: installedVersion, current: currentAppVersion)
+    }
     return .ok
 }
 

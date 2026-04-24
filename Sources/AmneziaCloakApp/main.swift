@@ -28,7 +28,7 @@ final class App: NSObject, NSApplicationDelegate {
     /// admin prompt. If the .app doesn't bundle CLI binaries (happens on
     /// local dev builds) we fall back to the "install from upstream" link.
     private func offerSetupIfNeeded() {
-        let preflight = installPreflight()
+        let preflight = installPreflight(currentAppVersion: Self.appVersion)
         if case .ok = preflight { return }
 
         // If bundled binaries exist, offer to install everything — one admin
@@ -44,17 +44,30 @@ final class App: NSObject, NSApplicationDelegate {
             return
         }
 
-        let missingPieces = preflightSummary(preflight)
         let a = NSAlert()
-        a.messageText = "Amnezia Cloak needs to complete setup"
-        a.informativeText = """
-            The following will be installed with one admin prompt:
+        let summary = preflightSummary(preflight)
+        switch preflight {
+        case .needsUpdate:
+            a.messageText = "Amnezia Cloak is out of date on this Mac"
+            a.informativeText = """
+                \(summary)
 
-            \(missingPieces)
+                Click Update to proceed — you'll be asked for your password once.
+                """
+            a.addButton(withTitle: "Update…")
+        case .helperMissing, .helperNotExecutable:
+            a.messageText = "Amnezia Cloak needs to complete setup"
+            a.informativeText = """
+                The following will be installed with one admin prompt:
 
-            Click Install to proceed — you'll be asked for your password once.
-            """
-        a.addButton(withTitle: "Install…")
+                \(summary)
+
+                Click Install to proceed — you'll be asked for your password once.
+                """
+            a.addButton(withTitle: "Install…")
+        case .ok, .awgToolsMissing:
+            return  // can't reach here; awgToolsMissing handled above, ok short-circuited earlier
+        }
         a.addButton(withTitle: "Not Now")
         NSApp.activate(ignoringOtherApps: true)
         guard a.runModal() == .alertFirstButtonReturn else { return }
@@ -79,13 +92,26 @@ final class App: NSObject, NSApplicationDelegate {
             return """
                 • Privileged helper at \(Paths.helper)
                 • amneziawg-tools (awg, awg-quick) and amneziawg-go at /usr/local/bin/
+                • bash 5 at /usr/local/libexec/amnezia-cloak/bash
                 • Sudoers rule so the app can call the helper without a password prompt
                 """
         case .awgToolsMissing:
             return """
                 • amneziawg-tools (awg, awg-quick) and amneziawg-go at /usr/local/bin/
                 """
+        case .needsUpdate(let installed, let current):
+            let from = installed.isEmpty ? "an older build" : "v\(installed)"
+            return """
+                Amnezia Cloak \(current) is installed but your system paths \
+                still hold \(from). Re-running the installer updates the \
+                privileged helper, the bundled CLI binaries, and the bundled \
+                bash so you pick up the latest fixes.
+                """
         }
+    }
+
+    fileprivate static var appVersion: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
     }
 
     /// Run the bundled `install-helper.sh` with admin privileges via
@@ -119,7 +145,7 @@ final class App: NSObject, NSApplicationDelegate {
                 .replacingOccurrences(of: "\"", with: "\\\"")
             return "\"\(escaped)\""
         }
-        let cmd = [script.path, resourcesDir, user]
+        let cmd = [script.path, resourcesDir, user, Self.appVersion]
             .map(shellQuote)
             .joined(separator: " ")
         let source = "do shell script \(applescriptQuote(cmd)) with administrator privileges"
@@ -259,10 +285,10 @@ final class App: NSObject, NSApplicationDelegate {
         // Before firing sudoHelper, gate on preflight so missing prerequisites
         // produce a specific alert instead of a silent no-op. Helper-missing
         // is handled by offerSetupIfNeeded which will re-prompt.
-        switch installPreflight() {
+        switch installPreflight(currentAppVersion: Self.appVersion) {
         case .ok:
             break
-        case .helperMissing, .helperNotExecutable:
+        case .helperMissing, .helperNotExecutable, .needsUpdate:
             offerSetupIfNeeded()
             return
         case .awgToolsMissing:
