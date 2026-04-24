@@ -82,16 +82,29 @@ final class App: NSObject, NSApplicationDelegate {
             return InstallResult(ok: false, error: "Bundled installer missing from app Resources.")
         }
         let user = NSUserName()
-        // Arg-vector into AppleScript's shell string. User-controlled inputs
-        // (helperSrc, script) are bundle URLs we own; user comes from NSUserName()
-        // which is OS-controlled. Still, quote defensively.
-        let quoted: (String) -> String = { s in
+
+        // Two different quoting levels to get right:
+        //   (1) Inside the shell command, wrap each arg in shell single-quotes
+        //       so whitespace / special chars in bundle paths don't split args.
+        //   (2) Wrap the whole shell command in an AppleScript DOUBLE-quoted
+        //       string literal — AppleScript doesn't recognise single quotes
+        //       as string delimiters, which is what broke the previous build
+        //       ("expected …but found unknown token").
+        let shellQuote: (String) -> String = { s in
             "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'"
         }
-        let cmd = "\(quoted(script.path)) \(quoted(helperSrc.path)) \(quoted(user))"
-        let source = """
-            do shell script \(quoted(cmd)) with administrator privileges
-            """
+        let applescriptQuote: (String) -> String = { s in
+            let escaped =
+                s
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "\"", with: "\\\"")
+            return "\"\(escaped)\""
+        }
+        let cmd = [script.path, helperSrc.path, user]
+            .map(shellQuote)
+            .joined(separator: " ")
+        let source = "do shell script \(applescriptQuote(cmd)) with administrator privileges"
+
         var err: NSDictionary?
         let scriptObj = NSAppleScript(source: source)
         let out = scriptObj?.executeAndReturnError(&err)

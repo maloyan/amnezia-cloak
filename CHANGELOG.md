@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.8] — 2026-04-25
+
+### Fixed
+- AppleScript source generated for the first-run helper installer was wrapped in single quotes, which AppleScript doesn't recognise as string delimiters — v0.7 produced `expected given … but found unknown token` and the admin prompt never appeared. Separate the two quoting layers: shell-single-quote each argument, then wrap the whole shell command in an AppleScript double-quoted string literal (with `\` and `"` escaped). Verified the generated source with `osacompile` before shipping.
+
 ## [0.7] — 2026-04-25
 
 ### Added
