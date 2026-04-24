@@ -1,12 +1,14 @@
 name: CodeQL
 
+# Swift CodeQL runs on macos-14 which costs 10× regular GitHub Actions minutes.
+# A 15m analysis = 150 billable minutes, so we only run it on a weekly schedule
+# plus on-demand via workflow_dispatch. Pushes and PRs no longer trigger it;
+# lint + test on cheaper ubuntu runners already catch most regressions, and a
+# 7-day delay on SAST findings is acceptable for a 350-line codebase.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   schedule:
     - cron: '17 6 * * 1'  # Mondays 06:17 UTC
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -17,8 +19,6 @@ jobs:
   analyze:
     name: Analyze Swift
     runs-on: macos-14
-    # Swift CodeQL extraction is slow-starting on macOS runners; 15m was not
-    # enough cold. Give it real headroom.
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
