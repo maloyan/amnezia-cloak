@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.5] — 2026-04-25
+
+### Added
+- About menu item opening the standard macOS About panel — shows app icon, version, copyright, and a clickable repo link.
+- `NSHumanReadableCopyright` in `Info.plist` (`© 2026 Narek Maloyan · MIT License`).
+
+### Changed
+- `Paste vpn:// URL…` dialog now uses a 520×120 wrapping `NSTextView` instead of a single-line `NSTextField` — a ~950-char URL is fully visible while pasting. Auto-focused so Cmd-V lands directly; all auto-substitution (smart quotes, dashes, link detection, spell correction) disabled so macOS can't mutate the base64url.
+
 ### Removed
 - CodeQL workflow. For a 350-line Swift app with zero external deps and three narrow input surfaces (all regex-validated or fed through a unit-tested pure-Swift decoder), CodeQL's weekly ~600 billable minutes on macOS runners was not worth what it found. Security posture is carried by the `awg-helper` arg-vector pattern, `validatedTunnelName`, unit-tested `VPNURL.parse`, and `SECURITY.md`.
 
