@@ -53,6 +53,14 @@ real_path() {
 case "$1" in
     up)
         validate_name "$2"
+        # Clear any stale state from a previous failed bring-up before
+        # retrying. awg-quick refuses to `up` when /var/run/amneziawg/
+        # holds partial state (a .name file or socket) from an earlier
+        # script-bail, dying with "already exists as utunX" and no
+        # obvious recovery path. Make `up` idempotent: tear down any
+        # orphan first, then bring it up fresh.
+        "$AWG_QUICK" down "$2" 2>/dev/null || true
+        cleanup_tunnel "$2"
         "$AWG_QUICK" up "$2"
         ;;
     down)

@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. Format foll
 
 ## [Unreleased]
 
+## [0.15] — 2026-04-25
+
+### Fixed
+- `awg-quick` refused to bring a tunnel up with `'narek_forgood' already exists as 'utun6'` when stale state from a previous failed start (an orphan utun interface, a leftover `.name` pointer, and a still-open `.sock`) lingered in `/var/run/amneziawg/`. Pre-v0.14 bring-ups regularly bailed mid-startup but never tore the partial state down, so users were stuck unless they SSH'd in and cleaned up by hand. `awg-helper`'s `up` verb now runs `awg-quick down` (ignoring errors) and `cleanup_tunnel` before `awg-quick up`, making bring-up idempotent — first click after upgrade auto-recovers from any leftover orphan.
+
 ## [0.14] — 2026-04-25
 
 ### Fixed
