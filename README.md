@@ -91,3 +91,7 @@ All three run in CI on every push and PR. See [`AGENTS.md`](./AGENTS.md) for lay
 ## License
 
 [MIT](./LICENSE) © Narek Maloyan.
+
+## Legal
+
+This software is provided for use in jurisdictions where its operation is legal. Users are responsible for compliance with their local laws.
